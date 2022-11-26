@@ -1,7 +1,8 @@
 from dataclasses import dataclass
 
-from vector_tile_protoc import vector_tile_pb2
+from google.protobuf.internal.containers import RepeatedScalarFieldContainer
 
+from mbtiles_tools import vector_tile_pb2
 from mbtiles_tools import render_tk
 
 
@@ -26,7 +27,7 @@ class ClosePath:
 PathCommands = list[LineTo | MoveTo | ClosePath]
 
 
-def geometry_to_commands(geometry: list[int]) -> PathCommands:
+def geometry_to_commands(geometry: RepeatedScalarFieldContainer[int]) -> PathCommands:
     idx: int = 0
     commands: PathCommands = []
     while idx < len(geometry):
@@ -54,22 +55,18 @@ def geometry_to_commands(geometry: list[int]) -> PathCommands:
     return commands
 
 
-if __name__ == "__main__":
-    t = vector_tile_pb2.Tile()
-    t.ParseFromString(open("14_8609_5863.pbf", "rb").read())
-    command_sets: list[PathCommands] = []
-    for layer in t.layers:
-        print("LAYER:")
-        print("layer version", layer.version)
-        print("layer name", layer.name)
-        print("layer extent", layer.extent)
-        for k, v in zip(layer.keys, layer.values):
-            print("LAYER KEY VALUE:", k, "=>", v)
-        for feature in layer.features:
-            print(feature.id)
-            print(feature.type)
-            print(feature.tags)
-            print(feature.geometry)
-            command_sets.append(geometry_to_commands(feature.geometry))
-            # print(geometry_to_commands(feature.geometry))
-    render_tk.render_with_tk(command_sets)
+class MBTile:
+    def __init__(self, data: bytes) -> None:
+        self.raw_tile = vector_tile_pb2.Tile()
+        self.raw_tile.ParseFromString(data)
+
+    def render_tk_styleless(self) -> None:
+        """Render all layers without any style and display using Tk.
+        NOTE: does not render points, only lines including area perimeters
+        Quick and simple, useful for debugging.
+        """
+        command_sets: list[PathCommands] = []
+        for layer in self.raw_tile.layers:
+            for feature in layer.features:
+                command_sets.append(geometry_to_commands(feature.geometry))
+        render_tk.render_with_tk(command_sets)

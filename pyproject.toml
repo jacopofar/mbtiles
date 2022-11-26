@@ -25,11 +25,13 @@ dev = [
     "types-protobuf>=3.20.4.5",
     "pytest>=7.2.0",
     "black>=22.10.0",
+    "mypy-protobuf>=3.4.0",
 ]
 
 [tool.pdm.scripts]
 mypy = {cmd = [
     "mypy",
+    "--strict",
     # this is to avoid the __init__.py
     "--explicit-package-bases",
     "mbtiles_tools",
@@ -37,4 +39,11 @@ mypy = {cmd = [
 black = {cmd = [
     "black",
     "mbtiles_tools",
+]}
+generate_protobuf_parser = {cmd = [
+    "protoc",
+    "-I=.",
+    "vector_tile.proto",
+    "--python_out=vector_tile_protoc",
+    "--mypy_out=vector_tile_protoc",
 ]}
