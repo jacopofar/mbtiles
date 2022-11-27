@@ -1,6 +1,8 @@
 from dataclasses import dataclass
+from typing import Any, Generator
 
 from google.protobuf.internal.containers import RepeatedScalarFieldContainer
+from PIL import Image, ImageDraw
 
 from mbtiles_tools import vector_tile_pb2
 from mbtiles_tools import render_tk
@@ -60,6 +62,18 @@ class MBTile:
         self.raw_tile = vector_tile_pb2.Tile()
         self.raw_tile.ParseFromString(data)
 
+    def generate_draw_commands(
+        self,
+    ) -> Generator[tuple[str, Any, Any, PathCommands], None, None]:
+        for layer in self.raw_tile.layers:
+            for feature in layer.features:
+                yield (
+                    layer.name,
+                    feature.type,
+                    feature.tags,  # TODO yield tags as a dictionary, not this stuff
+                    geometry_to_commands(feature.geometry),
+                )
+
     def render_tk_styleless(self) -> None:
         """Render all layers without any style and display using Tk.
         NOTE: does not render points, only lines including area perimeters
@@ -70,3 +84,37 @@ class MBTile:
             for feature in layer.features:
                 command_sets.append(geometry_to_commands(feature.geometry))
         render_tk.render_with_tk(command_sets)
+
+    def get_max_extent(self) -> int:
+        # TODO can extent change across layers??
+        return self.raw_tile.layers[0].extent
+
+    def render_image_styleless(self) -> Image.Image:
+        """Return a PIL image object with the tile drawn without style.
+
+        NOTE: does not render points, only lines including area perimeters
+        Quick and simple, useful for debugging.
+        """
+        im = Image.new(
+            "RGB",
+            (self.raw_tile.layers[0].extent, self.raw_tile.layers[0].extent),
+            (255, 255, 255),
+        )
+        draw = ImageDraw.Draw(im)
+        command_sets: list[PathCommands] = []
+        for layer in self.raw_tile.layers:
+            for feature in layer.features:
+                command_sets.append(geometry_to_commands(feature.geometry))
+
+        for cmds in command_sets:
+            x, y = 0, 0
+            for c in cmds:
+                if isinstance(c, MoveTo):
+                    x += c.dX
+                    y += c.dY
+                if isinstance(c, LineTo):
+                    nx = x + c.dX
+                    ny = y + c.dY
+                    draw.line((x, y, nx, ny), fill="black")
+                    x, y = nx, ny
+        return im
