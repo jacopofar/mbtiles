@@ -1,9 +1,14 @@
 from dataclasses import dataclass
 from typing import Generator
+import warnings
 
 from PIL import Image, ImageColor, ImageDraw
 
 from mbtiles_tools.tile import MBTile, PathCommands, MoveTo, LineTo
+
+warnings.warn(
+    "The styling functionality is too incomplete to be useful and may never be"
+)
 
 
 @dataclass
