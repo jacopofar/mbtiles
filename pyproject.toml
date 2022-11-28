@@ -28,6 +28,7 @@ dev = [
     "black>=22.10.0",
     "mypy-protobuf>=3.4.0",
     "types-Pillow>=9.3.0.2",
+    "pytest-cov>=4.0.0",
 ]
 
 [tool.pdm.scripts]
@@ -42,6 +43,14 @@ black = {cmd = [
     "black",
     "mbtiles_tools",
 ]}
+test_with_coverage = {cmd = [
+    "pytest",
+    "--cov=mbtiles_tools",
+    "--cov-report",
+    "html",
+    "tests/",
+]}
+
 generate_protobuf_parser = {cmd = [
     "protoc",
     "-I=.",

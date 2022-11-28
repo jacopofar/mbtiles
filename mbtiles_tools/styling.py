@@ -21,7 +21,8 @@ class LayerStyle:
 @dataclass
 class DrawStyle:
     """Style details for a specific element"""
-    color: int|tuple
+
+    color: int | tuple
 
 
 @dataclass
@@ -30,11 +31,12 @@ class DrawableElement:
     commands: PathCommands
 
 
-def parse_color(color: str) -> int|tuple:
+def parse_color(color: str | dict) -> int | tuple:
     if type(color) == dict:
         # it's an interpolation, just get the middle one
         return ImageColor.getrgb(color["stops"][0][1])
     return ImageColor.getrgb(color)
+
 
 class MapBoxStyle:
     def __init__(self, style: dict):
@@ -64,7 +66,8 @@ class MapBoxStyle:
             for styledef in self.layers.get(layer_name, []):
                 if styledef.type == "line":
                     yield DrawableElement(
-                        DrawStyle(color=parse_color(styledef.paint["line-color"])), draw_commands
+                        DrawStyle(color=parse_color(styledef.paint["line-color"])),
+                        draw_commands,
                     )
 
     def render(self, tile: MBTile) -> Image.Image:

@@ -1,4 +1,5 @@
-from mbtiles_tools.tile import geometry_to_commands, ClosePath, LineTo, MoveTo
+from mbtiles_tools.tile import geometry_to_commands
+from mbtiles_tools.tile import ClosePath, LineTo, MoveTo
 
 
 def test_example_point():

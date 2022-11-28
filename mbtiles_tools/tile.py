@@ -1,11 +1,11 @@
 from dataclasses import dataclass
+from math import ceil
 from typing import Any, Generator
 
 from google.protobuf.internal.containers import RepeatedScalarFieldContainer
-from PIL import Image, ImageDraw
+from PIL import Image, ImageColor, ImageDraw
 
 from mbtiles_tools import vector_tile_pb2
-from mbtiles_tools import render_tk
 
 
 @dataclass
@@ -62,51 +62,87 @@ class MBTile:
         self.raw_tile = vector_tile_pb2.Tile()
         self.raw_tile.ParseFromString(data)
 
+    def get_layer_names(self) -> set[str]:
+        return set(l.name for l in self.raw_tile.layers)
+
     def generate_draw_commands(
-        self,
+        self, layers: set[str] | None = None
     ) -> Generator[tuple[str, Any, Any, PathCommands], None, None]:
         for layer in self.raw_tile.layers:
-            for feature in layer.features:
-                yield (
-                    layer.name,
-                    feature.type,
-                    feature.tags,  # TODO yield tags as a dictionary, not this stuff
-                    geometry_to_commands(feature.geometry),
-                )
+            if layers is None or layer.name in layers:
+                for feature in layer.features:
+                    yield (
+                        layer.name,
+                        feature.type,
+                        feature.tags,  # TODO yield tags as a dictionary, not this stuff
+                        geometry_to_commands(feature.geometry),
+                    )
 
-    def render_tk_styleless(self) -> None:
+    def render_tk_styleless(self, layers: set[str] | None = None) -> None:
         """Render all layers without any style and display using Tk.
+
+        If layer names are provided, only those layers are rendered.
         NOTE: does not render points, only lines including area perimeters
         Quick and simple, useful for debugging.
         """
         command_sets: list[PathCommands] = []
-        for layer in self.raw_tile.layers:
-            for feature in layer.features:
-                command_sets.append(geometry_to_commands(feature.geometry))
+        for _, _, _, commands in self.generate_draw_commands(layers=layers):
+            command_sets.append(commands)
+        # import here to avoid circular imports
+        from mbtiles_tools import render_tk
+
         render_tk.render_with_tk(command_sets)
 
     def get_max_extent(self) -> int:
         # TODO can extent change across layers??
         return self.raw_tile.layers[0].extent
 
-    def render_image_styleless(self) -> Image.Image:
+    def render_image_styleless(
+        self,
+        layers: set[str] | None = None,
+        colorize: bool = False,
+        scale_factor: float = 1.0,
+    ) -> Image.Image:
         """Return a PIL image object with the tile drawn without style.
 
+        If layer names are provided, only those layers are rendered.
         NOTE: does not render points, only lines including area perimeters
         Quick and simple, useful for debugging.
         """
         im = Image.new(
             "RGB",
-            (self.raw_tile.layers[0].extent, self.raw_tile.layers[0].extent),
+            (
+                ceil(self.raw_tile.layers[0].extent / scale_factor),
+                ceil(self.raw_tile.layers[0].extent / scale_factor),
+            ),
             (255, 255, 255),
         )
         draw = ImageDraw.Draw(im)
-        command_sets: list[PathCommands] = []
-        for layer in self.raw_tile.layers:
-            for feature in layer.features:
-                command_sets.append(geometry_to_commands(feature.geometry))
-
-        for cmds in command_sets:
+        if colorize:
+            # colors arranged according to my taste ;-)
+            USED_COLORS = [
+                "navy",
+                "magenta",
+                "deepskyblue",
+                "brown",
+                "turquoise",
+                "aqua",
+                "darkcyan",
+                "red",
+                "darksalmon",
+                "darkgreen",
+                "green",
+                "orchid",
+                "silver",
+                "slategray",
+                "springgreen",
+                "teal",
+            ]
+            layer_colors = dict()
+            # sorted to be deterministic
+            for i, name in enumerate(sorted(self.get_layer_names())):
+                layer_colors[name] = USED_COLORS[i % len(USED_COLORS)]
+        for layer_name, _, _, cmds in self.generate_draw_commands(layers=layers):
             x, y = 0, 0
             for c in cmds:
                 if isinstance(c, MoveTo):
@@ -115,6 +151,17 @@ class MBTile:
                 if isinstance(c, LineTo):
                     nx = x + c.dX
                     ny = y + c.dY
-                    draw.line((x, y, nx, ny), fill="black")
+                    if colorize:
+                        draw.line(
+                            (
+                                x / scale_factor,
+                                y / scale_factor,
+                                nx / scale_factor,
+                                ny / scale_factor,
+                            ),
+                            fill=layer_colors[layer_name],
+                        )
+                    else:
+                        draw.line((x, y, nx, ny), fill="black")
                     x, y = nx, ny
         return im

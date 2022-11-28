@@ -1,5 +1,7 @@
 This project tries to handle MapBox vector tiles using Python.
 
+![tile rendered with colorized layers](example.png)
+
 # What is a vector tile
 The vector tile specifications are here: https://github.com/mapbox/vector-tile-spec/tree/master/2.1
 
