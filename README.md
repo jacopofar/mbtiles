@@ -2,6 +2,9 @@ This project tries to handle MapBox vector tiles using Python.
 
 ![tile rendered with colorized layers](example.png)
 
+
+This code is able to render a given tile file in a very simple way (see the image) to give an idea of the content.
+
 # What is a vector tile
 The vector tile specifications are here: https://github.com/mapbox/vector-tile-spec/tree/master/2.1
 
@@ -23,7 +26,7 @@ OpenStreetMap and MapBox represent tiles using what in the article above is call
 TMS places the origin on the bottom left corner (like a cartesian plane) and most libraries use the top left corner (as is common in computer graphics).
 
 
-For example, the WGS84 coordinates of the Sforza castle in Milan, Italy, are `45°28'10,62" N 9°10'48,14" E`. At zoom level 14 this corresponds to `14/8609/5863` in "Google" coordinate (and you can see these values in the tile filenames fetched by OSM and MB maps when zooming there), and `14/8609/10520` using the TileMapService standard. Pretty mucyh every library I found uses the first one, with Leaflet you can specify `tms:true` or use a `-y` in the URL template to handle the TMS coordinates.
+For example, the WGS84 coordinates of the Sforza castle in Milan, Italy, are `45°28'10,62" N 9°10'48,14" E`. At zoom level 14 this corresponds to `14/8609/5863` in "Google" coordinate (and you can see these values in the tile filenames fetched by OSM and MB maps when zooming there), and `14/8609/10520` using the TileMapService standard. Pretty much every library I found uses the first one, with Leaflet you can specify `tms:true` or use a `-y` in the URL template to handle the TMS coordinates.
 
 # Protobuf
 At this address there's the MapBox protobuf schema:
