@@ -1,4 +1,4 @@
-This project tries to handle MapBox vector tiles using Python.
+This project renders MapBox vector tiles using Python.
 
 ![tile rendered with colorized layers](example.png)
 
